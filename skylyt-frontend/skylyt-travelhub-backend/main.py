@@ -79,6 +79,7 @@ async def lifespan(app: FastAPI):
             raise Exception("Database not healthy")
         
         startup_logger.info(f"Database connected successfully in {db_health['connection_time']}ms")
+        startup_logger.info("Startup sequence completed successfully")
         
         # Ensure storage directories exist
         StorageManager.ensure_directory(StorageManager.BASE_STORAGE_PATH)
