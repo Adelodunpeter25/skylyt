@@ -33,27 +33,38 @@ const FleetManagement = lazy(() => import("./pages/FleetManagement"));
 const HotelManagement = lazy(() => import("./pages/HotelManagement"));
 const CarManagement = lazy(() => import("./pages/CarManagement"));
 
-// Keep critical path components as regular imports
-import Cars from "./pages/Cars";
-import Hotels from "./pages/Hotels";
-import HotelDetail from "./pages/HotelDetail";
-import CarDetail from "./pages/CarDetail";
-import Booking from "./pages/Booking";
-import Payment from "./pages/Payment";
-import PaymentConfirmation from "./pages/PaymentConfirmation";
-import BookingDetails from "./pages/BookingDetails";
+// Lazy load other heavy components
+const Cars = lazy(() => import("./pages/Cars"));
+const Hotels = lazy(() => import("./pages/Hotels"));
+const HotelDetail = lazy(() => import("./pages/HotelDetail"));
+const CarDetail = lazy(() => import("./pages/CarDetail"));
+const Booking = lazy(() => import("./pages/Booking"));
+const Payment = lazy(() => import("./pages/Payment"));
+const PaymentConfirmation = lazy(() => import("./pages/PaymentConfirmation"));
+const BookingDetails = lazy(() => import("./pages/BookingDetails"));
+const Destinations = lazy(() => import("./pages/Destinations"));
+const StateDestinationPage = lazy(() => import("./pages/StateDestinationPage"));
+const CityHotelsPage = lazy(() => import("./pages/CityHotelsPage"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const Contact = lazy(() => import("./pages/Contact"));
+const About = lazy(() => import("./pages/About"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-import Destinations from "./pages/Destinations";
-import StateDestinationPage from "./pages/StateDestinationPage";
-import CityHotelsPage from "./pages/CityHotelsPage";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import Contact from "./pages/Contact";
-import About from "./pages/About";
-
-import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   return (

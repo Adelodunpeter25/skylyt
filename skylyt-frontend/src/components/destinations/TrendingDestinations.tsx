@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { apiService } from '@/services/api';
 
-const TrendingDestinations = () => {
+const TrendingDestinations = memo(() => {
   const [cities, setCities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -137,6 +137,8 @@ const TrendingDestinations = () => {
       </div>
     </section>
   );
-};
+});
+
+TrendingDestinations.displayName = 'TrendingDestinations';
 
 export default TrendingDestinations;
