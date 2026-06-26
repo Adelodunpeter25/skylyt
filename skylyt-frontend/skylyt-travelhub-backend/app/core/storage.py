@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class StorageManager:
     """Centralized storage manager"""
     
-    BASE_STORAGE_PATH = Path("/app/storage")
+    BASE_STORAGE_PATH = Path(os.getenv("STORAGE_PATH", "/app/storage"))
     
     @classmethod
     def get_storage_path(cls, category: str = "") -> Path:
@@ -29,13 +29,19 @@ class StorageManager:
                     logger.info(f"Storage directory ready: {path}")
                     return
                 else:
-                    logger.warning(f"Storage directory exists but not writable: {path}")
-                    return
+                    # Try to fix permissions
+                    try:
+                        os.chmod(path, 0o755)
+                        logger.info(f"Fixed permissions for storage directory: {path}")
+                        return
+                    except:
+                        logger.warning(f"Storage directory exists but not writable: {path}")
+                        return
             
-            # Try to create directory
-            path.mkdir(parents=True, exist_ok=True)
+            # Try to create directory with proper permissions
+            path.mkdir(parents=True, exist_ok=True, mode=0o755)
             logger.info(f"Storage directory created: {path}")
-        except PermissionError:
+        except PermissionError as e:
             # Directory might exist but we don't have permission to check/create
             # If it exists and is writable, that's fine
             if path.exists() and os.access(path, os.W_OK):
