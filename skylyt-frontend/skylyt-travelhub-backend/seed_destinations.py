@@ -1,164 +1,20 @@
 #!/usr/bin/env python3
 """
-Database initialization script for Skylyt TravelHub
-Creates all tables and adds initial data
+Database seeding script for Nigerian States and Cities
+Creates the destination data needed for the destinations API
 """
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from sqlalchemy import text
 from app.core.database import engine, SessionLocal
-from app.models import Base, User, Role, Permission
-from app.models.rbac import user_roles, role_permissions
-from app.models.notification import Notification
-from app.models.car import Car
-from app.models.hotel import Hotel
-from app.models.booking import Booking
-from app.models.payment import Payment
 from app.models.state import State
 from app.models.city import City
-from app.core.security import get_password_hash
+from sqlalchemy import text
 
-def create_tables():
-    """Create all database tables"""
-    print("Creating database tables...")
-    Base.metadata.create_all(bind=engine)
-    print("✅ Tables created successfully")
-
-def create_initial_permissions():
-    """Create initial permissions"""
-    db = SessionLocal()
-    try:
-        permissions_data = [
-            # User permissions
-            {"name": "users:read", "resource": "users", "action": "read", "description": "View users"},
-            {"name": "users:create", "resource": "users", "action": "create", "description": "Create users"},
-            {"name": "users:update", "resource": "users", "action": "update", "description": "Update users"},
-            {"name": "users:delete", "resource": "users", "action": "delete", "description": "Delete users"},
-            
-            # Booking permissions
-            {"name": "bookings:read", "resource": "bookings", "action": "read", "description": "View bookings"},
-            {"name": "bookings:create", "resource": "bookings", "action": "create", "description": "Create bookings"},
-            {"name": "bookings:update", "resource": "bookings", "action": "update", "description": "Update bookings"},
-            {"name": "bookings:delete", "resource": "bookings", "action": "delete", "description": "Cancel bookings"},
-            
-            # Payment permissions
-            {"name": "payments:read", "resource": "payments", "action": "read", "description": "View payments"},
-            {"name": "payments:create", "resource": "payments", "action": "create", "description": "Process payments"},
-            {"name": "payments:verify", "resource": "payments", "action": "verify", "description": "Verify payments"},
-            
-            # Admin permissions
-            {"name": "admin:dashboard", "resource": "admin", "action": "read", "description": "Access admin dashboard"},
-            {"name": "admin:analytics", "resource": "admin", "action": "read", "description": "View analytics"},
-        ]
-        
-        for perm_data in permissions_data:
-            existing = db.query(Permission).filter(Permission.name == perm_data["name"]).first()
-            if not existing:
-                permission = Permission(**perm_data)
-                db.add(permission)
-        
-        db.commit()
-        print("✅ Initial permissions created")
-    except Exception as e:
-        print(f"❌ Error creating permissions: {e}")
-        db.rollback()
-    finally:
-        db.close()
-
-def create_initial_roles():
-    """Create initial roles"""
-    db = SessionLocal()
-    try:
-        # Create roles
-        roles_data = [
-            {"name": "customer", "description": "Customer with basic permissions"},
-            {"name": "accountant", "description": "Accountant with financial permissions"},
-            {"name": "admin", "description": "Administrator with elevated permissions"},
-            {"name": "superadmin", "description": "Super administrator with all permissions"},
-        ]
-        
-        for role_data in roles_data:
-            existing = db.query(Role).filter(Role.name == role_data["name"]).first()
-            if not existing:
-                role = Role(**role_data)
-                db.add(role)
-        
-        db.commit()
-        
-        # Assign permissions to roles
-        customer_role = db.query(Role).filter(Role.name == "customer").first()
-        accountant_role = db.query(Role).filter(Role.name == "accountant").first()
-        admin_role = db.query(Role).filter(Role.name == "admin").first()
-        superadmin_role = db.query(Role).filter(Role.name == "superadmin").first()
-        
-        # Customer role permissions
-        customer_permissions = db.query(Permission).filter(
-            Permission.name.in_(["bookings:read", "bookings:create", "bookings:update", "payments:create"])
-        ).all()
-        customer_role.permissions = customer_permissions
-        
-        # Accountant role permissions
-        accountant_permissions = db.query(Permission).filter(
-            Permission.name.in_(["bookings:read", "payments:read", "payments:verify"])
-        ).all()
-        accountant_role.permissions = accountant_permissions
-        
-        # Admin role permissions
-        admin_permissions = db.query(Permission).filter(
-            Permission.resource.in_(["bookings", "payments", "users"])
-        ).all()
-        admin_role.permissions = admin_permissions
-        
-        # Superadmin gets all permissions
-        all_permissions = db.query(Permission).all()
-        superadmin_role.permissions = all_permissions
-        
-        db.commit()
-        print("✅ Initial roles and permissions assigned")
-    except Exception as e:
-        print(f"❌ Error creating roles: {e}")
-        db.rollback()
-    finally:
-        db.close()
-
-def create_admin_user():
-    """Create initial admin user"""
-    db = SessionLocal()
-    try:
-        # Check if admin user exists
-        admin_user = db.query(User).filter(User.email == "admin@skylyt.com").first()
-        if not admin_user:
-            admin_user = User(
-                email="admin@skylyt.com",
-                hashed_password=get_password_hash("admin123"),
-                first_name="Admin",
-                last_name="User",
-                is_active=True,
-                is_verified=True
-            )
-            db.add(admin_user)
-            db.commit()
-            db.refresh(admin_user)
-            
-            # Assign superadmin role
-            superadmin_role = db.query(Role).filter(Role.name == "superadmin").first()
-            if superadmin_role:
-                admin_user.roles.append(superadmin_role)
-                db.commit()
-            
-            print("✅ Admin user created: admin@skylyt.com / admin123")
-        else:
-            print("ℹ️ Admin user already exists")
-    except Exception as e:
-        print(f"❌ Error creating admin user: {e}")
-        db.rollback()
-    finally:
-        db.close()
-
-def create_nigerian_destinations():
-    """Create Nigerian states and cities for destinations API"""
+def seed_nigerian_states_and_cities():
+    """Seed the database with Nigerian states and cities"""
+    
     db = SessionLocal()
     try:
         # Nigerian states data
@@ -289,25 +145,30 @@ def create_nigerian_destinations():
             ]
         }
         
-        # Check if data already exists
-        existing_states = db.query(State).count()
-        if existing_states > 0:
-            print(f"ℹ️ States already exist ({existing_states} found), skipping destination seeding")
-            return
-        
-        print("Creating Nigerian states and cities...")
+        # Clear existing data
+        print("Clearing existing states and cities...")
+        db.query(City).delete()
+        db.query(State).delete()
+        db.commit()
         
         # Create states
+        print("Creating states...")
         created_states = {}
         for state_data in states_data:
-            state = State(**state_data)
-            db.add(state)
-            db.commit()
-            db.refresh(state)
-            created_states[state.slug] = state.id
-            print(f"  ✅ Created state: {state.name}")
+            existing_state = db.query(State).filter(State.slug == state_data["slug"]).first()
+            if not existing_state:
+                state = State(**state_data)
+                db.add(state)
+                db.commit()
+                db.refresh(state)
+                created_states[state.slug] = state.id
+                print(f"  ✅ Created state: {state.name}")
+            else:
+                created_states[existing_state.slug] = existing_state.id
+                print(f"  ℹ️ State already exists: {existing_state.name}")
         
         # Create cities
+        print("Creating cities...")
         for state_slug, cities in cities_data.items():
             state_id = created_states.get(state_slug)
             if not state_id:
@@ -316,44 +177,46 @@ def create_nigerian_destinations():
             
             for city_data in cities:
                 city_data["state_id"] = state_id
-                city = City(**city_data)
-                db.add(city)
-                db.commit()
-                print(f"  ✅ Created city: {city.name} in {state_slug}")
+                existing_city = db.query(City).filter(
+                    City.slug == city_data["slug"],
+                    City.state_id == state_id
+                ).first()
+                
+                if not existing_city:
+                    city = City(**city_data)
+                    db.add(city)
+                    db.commit()
+                    print(f"  ✅ Created city: {city.name} in {state_slug}")
+                else:
+                    print(f"  ℹ️ City already exists: {existing_city.name}")
         
         db.commit()
-        print(f"✅ Successfully seeded {len(states_data)} states and {sum(len(cities) for cities in cities_data.values())} cities!")
+        print(f"\n✅ Successfully seeded {len(states_data)} states and {sum(len(cities) for cities in cities_data.values())} cities!")
+        
+        # Verify data
+        print("\n📊 Verification:")
+        state_count = db.query(State).count()
+        city_count = db.query(City).count()
+        print(f"  Total states: {state_count}")
+        print(f"  Total cities: {city_count}")
+        
+        # Test the specific endpoint that was failing
+        lagos_state = db.query(State).filter(State.slug == "lagos").first()
+        if lagos_state:
+            lagos_cities = db.query(City).filter(City.state_id == lagos_state.id).all()
+            print(f"  Lagos state cities: {len(lagos_cities)}")
+            print(f"  Lagos is featured: {lagos_state.is_featured}")
+        else:
+            print("  ⚠️ Lagos state not found!")
         
     except Exception as e:
-        print(f"❌ Error creating destinations: {e}")
+        print(f"❌ Error seeding destinations: {e}")
         db.rollback()
+        raise
     finally:
         db.close()
 
-def test_connection():
-    """Test database connection"""
-    try:
-        db = SessionLocal()
-        db.execute(text("SELECT 1"))
-        db.close()
-        print("✅ Database connection successful")
-        return True
-    except Exception as e:
-        print(f"❌ Database connection failed: {e}")
-        return False
-
 if __name__ == "__main__":
-    print("🚀 Initializing Skylyt TravelHub Database...")
-    
-    if not test_connection():
-        print("❌ Cannot connect to database. Check your .env configuration.")
-        sys.exit(1)
-    
-    create_tables()
-    create_initial_permissions()
-    create_initial_roles()
-    create_admin_user()
-    create_nigerian_destinations()
-    
-    print("✅ Database initialization complete!")
-    print("🔑 Admin login: admin@skylyt.com / admin123")
+    print("🌍 Starting Nigerian States and Cities Seeding...")
+    seed_nigerian_states_and_cities()
+    print("✅ Seeding complete!")
